@@ -2,13 +2,17 @@ package ru.practicum.shareit.item.model;
 
 import ru.practicum.shareit.item.dto.ItemDto;
 
+import java.util.Collections;
+
 public class ItemMapper {
     public static ItemDto toItemDto(Item item) {
         return new ItemDto(
                 item.getId(),
                 item.getName(),
                 item.getDescription(),
-                item.getAvailable()
+                item.getAvailable(),
+                item.getOwnerId(),
+                Collections.emptyList() // Комментарии добавим в сервисе
         );
     }
 
@@ -18,7 +22,7 @@ public class ItemMapper {
                 dto.getName(),
                 dto.getDescription(),
                 dto.getAvailable(),
-                null
+                dto.getOwnerId()
         );
     }
 }
