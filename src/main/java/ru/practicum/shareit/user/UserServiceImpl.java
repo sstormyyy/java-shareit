@@ -2,13 +2,12 @@ package ru.practicum.shareit.user;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
-public class UserServiceImpl implements UserService { // <-- Здесь должно быть implements
+public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     public UserServiceImpl(UserRepository userRepository) {
@@ -26,9 +25,9 @@ public class UserServiceImpl implements UserService { // <-- Здесь долж
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new IllegalArgumentException("Email уже используется");
         }
-        User user = UserMapper.toUser(dto);
+        User user = new User(null, dto.getName(), dto.getEmail());
         User created = userRepository.save(user);
-        return UserMapper.toUserDto(created);
+        return new UserDto(created.getId(), created.getName(), created.getEmail());
     }
 
     @Transactional
@@ -48,18 +47,18 @@ public class UserServiceImpl implements UserService { // <-- Здесь долж
         }
 
         User updated = userRepository.save(existing);
-        return UserMapper.toUserDto(updated);
+        return new UserDto(updated.getId(), updated.getName(), updated.getEmail());
     }
 
     public UserDto findById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
-        return UserMapper.toUserDto(user);
+        return new UserDto(user.getId(), user.getName(), user.getEmail());
     }
 
     public List<UserDto> findAll() {
         return userRepository.findAll().stream()
-                .map(UserMapper::toUserDto)
+                .map(u -> new UserDto(u.getId(), u.getName(), u.getEmail()))
                 .collect(Collectors.toList());
     }
 

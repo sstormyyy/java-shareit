@@ -14,5 +14,5 @@ public class ItemDto {
     private String description;
     private Boolean available;
     private Long ownerId;
-    private List<ru.practicum.shareit.item.dto.CommentDto> comments;
+    private List<CommentDto> comments;
 }

@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
-public class ItemServiceImpl implements ItemService { // <-- Здесь должно быть implements
+public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
@@ -40,10 +40,9 @@ public class ItemServiceImpl implements ItemService { // <-- Здесь долж
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Статус доступности должен быть указан");
         }
 
-        Item item = ItemMapper.toItem(dto);
-        item.setOwnerId(ownerId);
+        Item item = new Item(null, dto.getName(), dto.getDescription(), dto.getAvailable(), ownerId);
         Item created = itemRepository.save(item);
-        return ItemMapper.toItemDto(created);
+        return new ItemDto(created.getId(), created.getName(), created.getDescription(), created.getAvailable(), created.getOwnerId(), List.of());
     }
 
     @Transactional
@@ -60,24 +59,18 @@ public class ItemServiceImpl implements ItemService { // <-- Здесь долж
         if (dto.getAvailable() != null) existing.setAvailable(dto.getAvailable());
 
         Item updated = itemRepository.save(existing);
-        return ItemMapper.toItemDto(updated);
+        return new ItemDto(updated.getId(), updated.getName(), updated.getDescription(), updated.getAvailable(), updated.getOwnerId(), getCommentsForItem(updated.getId()));
     }
 
     public ItemDto findById(Long itemId) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Вещь не найдена"));
-        ItemDto dto = ItemMapper.toItemDto(item);
-        dto.setComments(getCommentsForItem(itemId));
-        return dto;
+        return new ItemDto(item.getId(), item.getName(), item.getDescription(), item.getAvailable(), item.getOwnerId(), getCommentsForItem(item.getId()));
     }
 
     public List<ItemDto> findByOwner(Long ownerId) {
         return itemRepository.findByOwnerId(ownerId).stream()
-                .map(item -> {
-                    ItemDto dto = ItemMapper.toItemDto(item);
-                    dto.setComments(getCommentsForItem(item.getId()));
-                    return dto;
-                })
+                .map(item -> new ItemDto(item.getId(), item.getName(), item.getDescription(), item.getAvailable(), item.getOwnerId(), getCommentsForItem(item.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -85,9 +78,8 @@ public class ItemServiceImpl implements ItemService { // <-- Здесь долж
         if (text == null || text.isBlank()) {
             return List.of();
         }
-        return itemRepository.findByAvailableTrueAndNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
-                        text, text).stream()
-                .map(ItemMapper::toItemDto)
+        return itemRepository.findByAvailableTrueAndNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(text, text).stream()
+                .map(item -> new ItemDto(item.getId(), item.getName(), item.getDescription(), item.getAvailable(), item.getOwnerId(), List.of()))
                 .collect(Collectors.toList());
     }
 
@@ -113,12 +105,12 @@ public class ItemServiceImpl implements ItemService { // <-- Здесь долж
         comment.setCreated(LocalDateTime.now());
 
         Comment saved = commentRepository.save(comment);
-        return CommentMapper.toCommentDto(saved);
+        return new CommentDto(saved.getId(), saved.getText(), saved.getAuthorName(), saved.getCreated());
     }
 
     private List<CommentDto> getCommentsForItem(Long itemId) {
         return commentRepository.findByItemIdOrderByCreatedDesc(itemId).stream()
-                .map(CommentMapper::toCommentDto)
+                .map(c -> new CommentDto(c.getId(), c.getText(), c.getAuthorName(), c.getCreated()))
                 .collect(Collectors.toList());
     }
 }
