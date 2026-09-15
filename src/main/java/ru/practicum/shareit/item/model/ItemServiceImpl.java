@@ -2,31 +2,44 @@ package ru.practicum.shareit.item.model;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.user.UserStorage;
+import ru.practicum.shareit.user.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class ItemServiceImpl implements ItemService {
-    private final ItemStorage storage;
-    private final UserStorage userStorage;
+    private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
+    private final CommentRepository commentRepository;
 
-    public ItemServiceImpl(ItemStorage storage, UserStorage userStorage) {
-        this.storage = storage;
-        this.userStorage = userStorage;
+    public ItemServiceImpl(ItemRepository itemRepository,
+                           UserRepository userRepository,
+                           BookingRepository bookingRepository,
+                           CommentRepository commentRepository) {
+        this.itemRepository = itemRepository;
+        this.userRepository = userRepository;
+        this.bookingRepository = bookingRepository;
+        this.commentRepository = commentRepository;
     }
 
-    @Override
+    @Transactional
     public ItemDto create(Long ownerId, ItemDto dto) {
-        // 1. Проверяем, что пользователь существует
-        if (!userStorage.findById(ownerId).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден");
+        if (ownerId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID пользователя обязателен");
         }
+        userRepository.findById(ownerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
 
-        // 2. Валидация полей
         if (dto.getName() == null || dto.getName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Название не может быть пустым");
         }
@@ -37,48 +50,94 @@ public class ItemServiceImpl implements ItemService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Статус доступности должен быть указан");
         }
 
-        Item item = ItemMapper.toItem(dto);
-        item.setOwnerId(ownerId);
-        Item created = storage.create(item);
-        return ItemMapper.toItemDto(created);
+        Item item = new Item(null, dto.getName(), dto.getDescription(), dto.getAvailable(), ownerId);
+        Item created = itemRepository.save(item);
+        return new ItemDto(created.getId(), created.getName(), created.getDescription(), created.getAvailable(), created.getOwnerId(), List.of());
     }
 
-    @Override
+    @Transactional
     public ItemDto update(Long ownerId, Long itemId, ItemDto dto) {
-        Item existing = storage.findById(itemId)
+        if (ownerId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID пользователя обязателен");
+        }
+        Item existing = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Вещь не найдена"));
 
-        // 3. Проверяем, что текущий пользователь является владельцем
         if (!existing.getOwnerId().equals(ownerId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не является владельцем");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Только владелец может редактировать вещь");
         }
 
         if (dto.getName() != null) existing.setName(dto.getName());
         if (dto.getDescription() != null) existing.setDescription(dto.getDescription());
         if (dto.getAvailable() != null) existing.setAvailable(dto.getAvailable());
 
-        Item updated = storage.update(existing);
-        return ItemMapper.toItemDto(updated);
+        Item updated = itemRepository.save(existing);
+        return new ItemDto(updated.getId(), updated.getName(), updated.getDescription(), updated.getAvailable(), updated.getOwnerId(), getCommentsForItem(updated.getId()));
     }
 
-    @Override
     public ItemDto findById(Long itemId) {
-        Item item = storage.findById(itemId)
+        Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Вещь не найдена"));
-        return ItemMapper.toItemDto(item);
+        return new ItemDto(item.getId(), item.getName(), item.getDescription(), item.getAvailable(), item.getOwnerId(), getCommentsForItem(item.getId()));
     }
 
-    @Override
     public List<ItemDto> findByOwner(Long ownerId) {
-        return storage.findByOwnerId(ownerId).stream()
-                .map(ItemMapper::toItemDto)
+        return itemRepository.findByOwnerId(ownerId).stream()
+                .map(item -> new ItemDto(item.getId(), item.getName(), item.getDescription(), item.getAvailable(), item.getOwnerId(), getCommentsForItem(item.getId())))
                 .collect(Collectors.toList());
     }
 
-    @Override
     public List<ItemDto> search(String text) {
-        return storage.search(text).stream()
-                .map(ItemMapper::toItemDto)
+        if (text == null || text.isBlank()) {
+            return List.of();
+        }
+        return itemRepository.findByAvailableTrueAndNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(text, text).stream()
+                .map(item -> new ItemDto(item.getId(), item.getName(), item.getDescription(), item.getAvailable(), item.getOwnerId(), List.of()))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public CommentDto addComment(Long itemId, Long userId, String text) {
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID пользователя обязателен");
+        }
+        if (itemId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID вещи обязателен");
+        }
+        if (text == null || text.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Текст комментария не может быть пустым");
+        }
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
+
+        itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Вещь не найдена"));
+
+        boolean hasApprovedBooking = bookingRepository.findByItemIdAndBookerIdAndStatusAndEndBefore(
+                itemId, userId, BookingStatus.APPROVED, LocalDateTime.now()
+        ).isPresent();
+
+        if (!hasApprovedBooking) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Нельзя оставить отзыв, если вы не бронировали вещь");
+        }
+
+        String authorName = userRepository.findById(userId).map(u -> u.getName()).orElse("Unknown");
+
+        Comment comment = new Comment();
+        comment.setText(text);
+        comment.setItemId(itemId);
+        comment.setAuthorId(userId);
+        comment.setAuthorName(authorName);
+        comment.setCreated(LocalDateTime.now());
+
+        Comment saved = commentRepository.save(comment);
+        return new CommentDto(saved.getId(), saved.getText(), saved.getAuthorName(), saved.getCreated());
+    }
+
+    private List<CommentDto> getCommentsForItem(Long itemId) {
+        return commentRepository.findByItemIdOrderByCreatedDesc(itemId).stream()
+                .map(c -> new CommentDto(c.getId(), c.getText(), c.getAuthorName(), c.getCreated()))
                 .collect(Collectors.toList());
     }
 }
