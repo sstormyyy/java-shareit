@@ -8,6 +8,7 @@ import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,19 +18,28 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
 
     public ItemServiceImpl(ItemRepository itemRepository,
+                           UserRepository userRepository,
                            BookingRepository bookingRepository,
                            CommentRepository commentRepository) {
         this.itemRepository = itemRepository;
+        this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
         this.commentRepository = commentRepository;
     }
 
     @Transactional
     public ItemDto create(Long ownerId, ItemDto dto) {
+        if (ownerId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID пользователя обязателен");
+        }
+        userRepository.findById(ownerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
+
         if (dto.getName() == null || dto.getName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Название не может быть пустым");
         }
@@ -47,6 +57,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Transactional
     public ItemDto update(Long ownerId, Long itemId, ItemDto dto) {
+        if (ownerId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID пользователя обязателен");
+        }
         Item existing = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Вещь не найдена"));
 
@@ -85,23 +98,37 @@ public class ItemServiceImpl implements ItemService {
 
     @Transactional
     public CommentDto addComment(Long itemId, Long userId, String text) {
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID пользователя обязателен");
+        }
+        if (itemId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID вещи обязателен");
+        }
         if (text == null || text.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Текст комментария не может быть пустым");
         }
 
-        boolean hasApprovedBooking = bookingRepository.findByItemIdAndStatusOrderByStartDesc(itemId, BookingStatus.APPROVED)
-                .stream()
-                .anyMatch(b -> b.getBookerId().equals(userId) && b.getEnd().isBefore(LocalDateTime.now()));
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
+
+        itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Вещь не найдена"));
+
+        boolean hasApprovedBooking = bookingRepository.findByItemIdAndBookerIdAndStatusAndEndBefore(
+                itemId, userId, BookingStatus.APPROVED, LocalDateTime.now()
+        ).isPresent();
 
         if (!hasApprovedBooking) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Нельзя оставить отзыв, если вы не бронировали вещь");
         }
 
+        String authorName = userRepository.findById(userId).map(u -> u.getName()).orElse("Unknown");
+
         Comment comment = new Comment();
         comment.setText(text);
         comment.setItemId(itemId);
         comment.setAuthorId(userId);
-        comment.setAuthorName("User " + userId);
+        comment.setAuthorName(authorName);
         comment.setCreated(LocalDateTime.now());
 
         Comment saved = commentRepository.save(comment);
