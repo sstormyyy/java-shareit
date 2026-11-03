@@ -8,6 +8,7 @@ import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
@@ -114,21 +115,22 @@ public class ItemServiceImpl implements ItemService {
         itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Вещь не найдена"));
 
-        boolean hasApprovedBooking = bookingRepository.findByItemIdAndBookerIdAndStatusAndEndBefore(
-                itemId, userId, BookingStatus.APPROVED, LocalDateTime.now()
-        ).isPresent();
+        // Проверяем, что пользователь брал эту вещь в аренду (бронирование завершено и одобрено)
+        List<Booking> pastBookings = bookingRepository.findByItemIdAndStatusOrderByStartDesc(itemId, BookingStatus.APPROVED);
+        boolean hasValidBooking = pastBookings.stream()
+                .anyMatch(b -> b.getBookerId().equals(userId) && b.getEnd().isBefore(LocalDateTime.now()));
 
-        if (!hasApprovedBooking) {
+        if (!hasValidBooking) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Нельзя оставить отзыв, если вы не бронировали вещь");
         }
 
-        String authorName = userRepository.findById(userId).map(u -> u.getName()).orElse("Unknown");
+        User author = userRepository.findById(userId).orElseThrow();
 
         Comment comment = new Comment();
         comment.setText(text);
         comment.setItemId(itemId);
         comment.setAuthorId(userId);
-        comment.setAuthorName(authorName);
+        comment.setAuthorName(author.getName());
         comment.setCreated(LocalDateTime.now());
 
         Comment saved = commentRepository.save(comment);

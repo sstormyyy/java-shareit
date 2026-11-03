@@ -13,6 +13,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByBookerIdOrderByStartDesc(Long bookerId);
 
+    List<Booking> findByItemIdAndStatusOrderByStartDesc(Long itemId, BookingStatus status);
+
     @Query("SELECT b FROM Booking b WHERE b.bookerId = ?1 AND b.status = ?2 ORDER BY b.start DESC")
     List<Booking> findByBookerIdAndStatus(Long bookerId, BookingStatus status);
 
@@ -39,7 +41,4 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("SELECT b FROM Booking b WHERE b.itemId IN (SELECT i.id FROM Item i WHERE i.ownerId = ?1) AND b.start > ?2 ORDER BY b.start DESC")
     List<Booking> findFutureBookingsByItemOwnerId(Long ownerId, LocalDateTime now);
-
-    // Новый метод для проверки завершенного бронирования
-    Optional<Booking> findByItemIdAndBookerIdAndStatusAndEndBefore(Long itemId, Long bookerId, BookingStatus status, LocalDateTime endBefore);
 }
