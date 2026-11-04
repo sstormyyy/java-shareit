@@ -1,19 +1,20 @@
 package ru.practicum.shareit.user;
 
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
-    private final UserStorage storage;
+    private final UserRepository userRepository;
 
-    public UserServiceImpl(UserStorage storage) {
-        this.storage = storage;
+    public UserServiceImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
-    @Override
+    @Transactional
     public UserDto create(UserDto dto) {
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
             throw new IllegalArgumentException("Email не может быть пустым");
@@ -21,46 +22,48 @@ public class UserServiceImpl implements UserService {
         if (!dto.getEmail().contains("@")) {
             throw new IllegalArgumentException("Email должен содержать @");
         }
-        if (storage.existsByEmail(dto.getEmail())) {
+        if (userRepository.existsByEmail(dto.getEmail())) {
             throw new IllegalArgumentException("Email уже используется");
         }
-        User user = UserMapper.toUser(dto);
-        User created = storage.create(user);
-        return UserMapper.toUserDto(created);
+        User user = new User(null, dto.getName(), dto.getEmail());
+        User created = userRepository.save(user);
+        return new UserDto(created.getId(), created.getName(), created.getEmail());
     }
 
-    @Override
+    @Transactional
     public UserDto update(Long id, UserDto dto) {
-        User existing = storage.findById(id)
+        User existing = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
-        if (dto.getName() != null) existing.setName(dto.getName());
-        if (dto.getEmail() != null) {
+
+        if (dto.getName() != null && !dto.getName().isBlank()) {
+            existing.setName(dto.getName());
+        }
+        if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
             if (!dto.getEmail().equalsIgnoreCase(existing.getEmail())
-                    && storage.existsByEmail(dto.getEmail())) {
+                    && userRepository.existsByEmail(dto.getEmail())) {
                 throw new IllegalArgumentException("Email уже используется");
             }
             existing.setEmail(dto.getEmail());
         }
-        User updated = storage.update(existing);
-        return UserMapper.toUserDto(updated);
+
+        User updated = userRepository.save(existing);
+        return new UserDto(updated.getId(), updated.getName(), updated.getEmail());
     }
 
-    @Override
     public UserDto findById(Long id) {
-        User user = storage.findById(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
-        return UserMapper.toUserDto(user);
+        return new UserDto(user.getId(), user.getName(), user.getEmail());
     }
 
-    @Override
     public List<UserDto> findAll() {
-        return storage.findAll().stream()
-                .map(UserMapper::toUserDto)
+        return userRepository.findAll().stream()
+                .map(u -> new UserDto(u.getId(), u.getName(), u.getEmail()))
                 .collect(Collectors.toList());
     }
 
-    @Override
+    @Transactional
     public void deleteById(Long id) {
-        storage.deleteById(id);
+        userRepository.deleteById(id);
     }
 }
