@@ -11,6 +11,7 @@ import ru.practicum.shareit.booking.dto.UserShortDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.model.ItemRepository;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
@@ -140,6 +141,13 @@ public class BookingService {
     }
 
     public List<BookingDto> getBookingsByOwner(Long ownerId, BookingState state) {
+        // Проверяем, что у пользователя есть хотя бы одна вещь
+        List<Item> userItems = itemRepository.findByOwnerId(ownerId);
+        if (userItems.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "У пользователя нет вещей для отображения бронирований");
+        }
+
         List<Booking> bookings;
         LocalDateTime now = LocalDateTime.now();
 
