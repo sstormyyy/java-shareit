@@ -1,8 +1,10 @@
-﻿package ru.practicum.shareit.item;
+﻿Set-Content -Path "src\main\java\ru\practicum\shareit\item\ItemController.java" -Encoding UTF8 -Value @'
+        package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+        import ru.practicum.shareit.ShareItConstants;
 import ru.practicum.shareit.item.dto.ItemDto;
 
 import java.util.List;
@@ -17,13 +19,13 @@ public class ItemController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ItemDto create(@RequestBody ItemDto itemDto,
-                          @RequestHeader("X-Sharer-User-Id") Long userId) {
+                          @RequestHeader(ShareItConstants.SHARER_USER_HEADER) Long userId) {
         return itemService.create(itemDto, userId);
     }
 
     @PatchMapping("/{itemId}")
     public ItemDto update(@RequestBody ItemDto itemDto,
-                          @RequestHeader("X-Sharer-User-Id") Long userId,
+                          @RequestHeader(ShareItConstants.SHARER_USER_HEADER) Long userId,
                           @PathVariable Long itemId) {
         return itemService.update(itemDto, userId, itemId);
     }
@@ -34,7 +36,7 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDto> getByOwnerId(@RequestHeader("X-Sharer-User-Id") Long ownerId) {
+    public List<ItemDto> getByOwnerId(@RequestHeader(ShareItConstants.SHARER_USER_HEADER) Long ownerId) {
         return itemService.getByOwnerId(ownerId);
     }
 
@@ -43,3 +45,4 @@ public class ItemController {
         return itemService.search(text);
     }
 }
+'@
