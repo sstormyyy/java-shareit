@@ -1,4 +1,9 @@
 package ru.practicum.shareit.booking.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -8,21 +13,26 @@ import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class BookingService {
+
     private final BookingRepository bookingRepository;
     private final ItemRepository itemRepository;
 
     public BookingDto create(Integer bookerId, BookingDto dto) {
-        Item item = itemRepository.findById(dto.getItemId()).orElseThrow(() -> new NotFoundException("Item not found"));
-        if (!item.getAvailable()) throw new IllegalArgumentException("Item not available");
-        if (item.getOwnerId().equals(bookerId)) throw new IllegalArgumentException("Owner cannot book own item");
-        if (dto.getStart().isAfter(dto.getEnd()) || dto.getStart().isEqual(dto.getEnd())) throw new IllegalArgumentException("Invalid dates");
+        Item item = itemRepository.findById(dto.getItemId())
+                .orElseThrow(() -> new NotFoundException("Item not found"));
+        if (!item.getAvailable()) {
+            throw new IllegalArgumentException("Item not available");
+        }
+        if (item.getOwnerId().equals(bookerId)) {
+            throw new IllegalArgumentException("Owner cannot book own item");
+        }
+        if (dto.getStart().isAfter(dto.getEnd()) || dto.getStart().isEqual(dto.getEnd())) {
+            throw new IllegalArgumentException("Invalid dates");
+        }
 
         Booking booking = new Booking();
         booking.setStart(dto.getStart());
@@ -34,17 +44,23 @@ public class BookingService {
     }
 
     public BookingDto approve(Integer bookingId, Integer ownerId, Boolean approved) {
-        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new NotFoundException("Booking not found"));
-        Item item = itemRepository.findById(booking.getItemId()).orElseThrow(() -> new NotFoundException("Item not found"));
-        if (!item.getOwnerId().equals(ownerId)) throw new IllegalArgumentException("Not owner");
-        
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("Booking not found"));
+        Item item = itemRepository.findById(booking.getItemId())
+                .orElseThrow(() -> new NotFoundException("Item not found"));
+        if (!item.getOwnerId().equals(ownerId)) {
+            throw new IllegalArgumentException("Not owner");
+        }
+
         booking.setStatus(approved ? Booking.BookingStatus.APPROVED : Booking.BookingStatus.REJECTED);
         return mapToDto(bookingRepository.save(booking));
     }
 
     public BookingDto getById(Integer id, Integer userId) {
-        Booking booking = bookingRepository.findById(id).orElseThrow(() -> new NotFoundException("Booking not found"));
-        Item item = itemRepository.findById(booking.getItemId()).orElseThrow(() -> new NotFoundException("Item not found"));
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Booking not found"));
+        Item item = itemRepository.findById(booking.getItemId())
+                .orElseThrow(() -> new NotFoundException("Item not found"));
         if (!booking.getBookerId().equals(userId) && !item.getOwnerId().equals(userId)) {
             throw new NotFoundException("Access denied");
         }
@@ -53,29 +69,62 @@ public class BookingService {
 
     public List<BookingDto> getByBooker(Integer bookerId, BookingState state) {
         LocalDateTime now = LocalDateTime.now();
-        List<Booking> bookings = switch (state) {
-            case ALL -> bookingRepository.findByBookerIdOrderByStartDesc(bookerId);
-            case CURRENT -> bookingRepository.findByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(bookerId, now, now);
-            case PAST -> bookingRepository.findByBookerIdAndStartBeforeOrderByStartDesc(bookerId, now);
-            case FUTURE -> bookingRepository.findByBookerIdAndStartAfterOrderByStartDesc(bookerId, now);
-            case WAITING -> bookingRepository.findByBookerIdAndStatusOrderByStartDesc(bookerId, Booking.BookingStatus.WAITING);
-            case REJECTED -> bookingRepository.findByBookerIdAndStatusOrderByStartDesc(bookerId, Booking.BookingStatus.REJECTED);
-        };
+        List<Booking> bookings;
+        switch (state) {
+            case ALL:
+                bookings = bookingRepository.findByBookerIdOrderByStartDesc(bookerId);
+                break;
+            case CURRENT:
+                bookings = bookingRepository.findByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(bookerId, now, now);
+                break;
+            case PAST:
+                bookings = bookingRepository.findByBookerIdAndStartBeforeOrderByStartDesc(bookerId, now);
+                break;
+            case FUTURE:
+                bookings = bookingRepository.findByBookerIdAndStartAfterOrderByStartDesc(bookerId, now);
+                break;
+            case WAITING:
+                bookings = bookingRepository.findByBookerIdAndStatusOrderByStartDesc(bookerId, Booking.BookingStatus.WAITING);
+                break;
+            case REJECTED:
+                bookings = bookingRepository.findByBookerIdAndStatusOrderByStartDesc(bookerId, Booking.BookingStatus.REJECTED);
+                break;
+            default:
+                bookings = List.of();
+        }
         return bookings.stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
     public List<BookingDto> getByOwner(Integer ownerId, BookingState state) {
-        List<Integer> itemIds = itemRepository.findByOwnerId(ownerId).stream().map(Item::getId).collect(Collectors.toList());
-        if (itemIds.isEmpty()) return List.of();
+        List<Integer> itemIds = itemRepository.findByOwnerId(ownerId).stream()
+                .map(Item::getId).collect(Collectors.toList());
+        if (itemIds.isEmpty()) {
+            return List.of();
+        }
         LocalDateTime now = LocalDateTime.now();
-        List<Booking> bookings = switch (state) {
-            case ALL -> bookingRepository.findByItemIdInAndBookerIdNotOrderByStartDesc(itemIds, ownerId);
-            case CURRENT -> bookingRepository.findByItemIdInAndStartBeforeAndEndAfterOrderByStartDesc(itemIds, now, now);
-            case PAST -> bookingRepository.findByItemIdInAndStartBeforeOrderByStartDesc(itemIds, now);
-            case FUTURE -> bookingRepository.findByItemIdInAndStartAfterOrderByStartDesc(itemIds, now);
-            case WAITING -> bookingRepository.findByItemIdInAndStatusOrderByStartDesc(itemIds, Booking.BookingStatus.WAITING);
-            case REJECTED -> bookingRepository.findByItemIdInAndStatusOrderByStartDesc(itemIds, Booking.BookingStatus.REJECTED);
-        };
+        List<Booking> bookings;
+        switch (state) {
+            case ALL:
+                bookings = bookingRepository.findByItemIdInAndBookerIdNotOrderByStartDesc(itemIds, ownerId);
+                break;
+            case CURRENT:
+                bookings = bookingRepository.findByItemIdInAndStartBeforeAndEndAfterOrderByStartDesc(itemIds, now, now);
+                break;
+            case PAST:
+                bookings = bookingRepository.findByItemIdInAndStartBeforeOrderByStartDesc(itemIds, now);
+                break;
+            case FUTURE:
+                bookings = bookingRepository.findByItemIdInAndStartAfterOrderByStartDesc(itemIds, now);
+                break;
+            case WAITING:
+                bookings = bookingRepository.findByItemIdInAndStatusOrderByStartDesc(itemIds, Booking.BookingStatus.WAITING);
+                break;
+            case REJECTED:
+                bookings = bookingRepository.findByItemIdInAndStatusOrderByStartDesc(itemIds, Booking.BookingStatus.REJECTED);
+                break;
+            default:
+                bookings = List.of();
+        }
         return bookings.stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
