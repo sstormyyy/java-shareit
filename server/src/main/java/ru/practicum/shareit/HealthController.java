@@ -8,6 +8,7 @@ public class HealthController {
 
     @GetMapping("/")
     public String healthCheck() {
-        return "ShareIt Server is running";
+        System.out.println("=== HEALTH CHECK CALLED ===");
+        return "OK";
     }
 }
