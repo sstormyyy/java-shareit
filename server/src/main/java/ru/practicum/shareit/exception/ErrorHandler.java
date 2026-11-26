@@ -1,3 +1,4 @@
+
 package ru.practicum.shareit.exception;
 
 import java.util.Map;
@@ -9,6 +10,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ErrorHandler {
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> handleEmailAlreadyExistsException(final EmailAlreadyExistsException e) {
+        return Map.of("error", e.getMessage());
+    }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.NOT_FOUND)
