@@ -1,11 +1,19 @@
-﻿package ru.practicum.shareit.client;
-import org.springframework.http.*;
+package ru.practicum.shareit.client;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class BaseClient {
     protected final RestTemplate rest;
 
@@ -13,42 +21,72 @@ public class BaseClient {
         this.rest = rest;
     }
 
+    protected ResponseEntity<Object> get(String path) {
+        return get(path, null, null);
+    }
+
     protected ResponseEntity<Object> get(String path, @Nullable Map<String, Object> parameters) {
-        return makeAndSendRequest(HttpMethod.GET, path, parameters, null);
+        return get(path, parameters, null);
+    }
+
+    protected ResponseEntity<Object> get(String path, @Nullable Map<String, Object> parameters,
+                                         @Nullable Map<String, String> headers) {
+        return makeAndSendRequest(HttpMethod.GET, path, parameters, null, headers);
     }
 
     protected <T> ResponseEntity<Object> post(String path, T body) {
-        return makeAndSendRequest(HttpMethod.POST, path, null, body);
+        return post(path, body, null);
+    }
+
+    protected <T> ResponseEntity<Object> post(String path, T body, @Nullable Map<String, String> headers) {
+        return makeAndSendRequest(HttpMethod.POST, path, null, body, headers);
     }
 
     protected <T> ResponseEntity<Object> patch(String path, T body) {
-        return makeAndSendRequest(HttpMethod.PATCH, path, null, body);
+        return patch(path, body, null, null);
+    }
+
+    protected <T> ResponseEntity<Object> patch(String path, T body, @Nullable Map<String, String> headers) {
+        return patch(path, body, null, headers);
+    }
+
+    protected <T> ResponseEntity<Object> patch(String path, T body,
+                                               @Nullable Map<String, Object> parameters,
+                                               @Nullable Map<String, String> headers) {
+        return makeAndSendRequest(HttpMethod.PATCH, path, parameters, body, headers);
     }
 
     protected ResponseEntity<Object> delete(String path) {
-        return makeAndSendRequest(HttpMethod.DELETE, path, null, null);
+        return makeAndSendRequest(HttpMethod.DELETE, path, null, null, null);
     }
 
-    private <T> ResponseEntity<Object> makeAndSendRequest(HttpMethod method, String path, @Nullable Map<String, Object> parameters, @Nullable T body) {
-        HttpEntity<T> requestEntity = new HttpEntity<>(body, defaultHeaders());
-        ResponseEntity<Object> shareitServerResponse;
+    private <T> ResponseEntity<Object> makeAndSendRequest(HttpMethod method, String path,
+                                                           @Nullable Map<String, Object> parameters,
+                                                           @Nullable T body,
+                                                           @Nullable Map<String, String> headers) {
+        HttpEntity<T> requestEntity = new HttpEntity<>(body, defaultHeaders(headers));
+        ResponseEntity<Object> serverResponse;
         try {
-            if (parameters != null) {
-                shareitServerResponse = rest.exchange(path, method, requestEntity, Object.class, parameters);
+            if (parameters != null && !parameters.isEmpty()) {
+                serverResponse = rest.exchange(path, method, requestEntity, Object.class, parameters);
             } else {
-                shareitServerResponse = rest.exchange(path, method, requestEntity, Object.class);
+                serverResponse = rest.exchange(path, method, requestEntity, Object.class);
             }
         } catch (HttpStatusCodeException e) {
+            log.error("{} {} server error: {}", method, path, e.getResponseBodyAsString());
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsByteArray());
         }
-        return prepareGatewayResponse(shareitServerResponse);
+        return prepareGatewayResponse(serverResponse);
     }
 
-    private HttpHeaders defaultHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        return headers;
+    private HttpHeaders defaultHeaders(@Nullable Map<String, String> headers) {
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        httpHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
+        if (headers != null) {
+            headers.forEach(httpHeaders::set);
+        }
+        return httpHeaders;
     }
 
     private static ResponseEntity<Object> prepareGatewayResponse(ResponseEntity<Object> response) {

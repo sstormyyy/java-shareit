@@ -1,4 +1,4 @@
-﻿package ru.practicum.shareit.user.service;
+package ru.practicum.shareit.user.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;

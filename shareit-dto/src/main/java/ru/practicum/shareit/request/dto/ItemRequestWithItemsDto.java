@@ -1,4 +1,4 @@
-﻿package ru.practicum.shareit.request.dto;
+package ru.practicum.shareit.request.dto;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import ru.practicum.shareit.item.dto.ItemDto;

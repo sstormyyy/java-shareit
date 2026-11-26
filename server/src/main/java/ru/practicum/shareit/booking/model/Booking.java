@@ -1,4 +1,4 @@
-﻿package ru.practicum.shareit.booking.model;
+package ru.practicum.shareit.booking.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;

@@ -1,4 +1,4 @@
-﻿package ru.practicum.shareit.request.model;
+package ru.practicum.shareit.request.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;

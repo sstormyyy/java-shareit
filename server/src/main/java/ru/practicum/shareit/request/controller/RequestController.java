@@ -1,4 +1,4 @@
-﻿package ru.practicum.shareit.request.controller;
+package ru.practicum.shareit.request.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
