@@ -25,12 +25,6 @@
         <module>server</module>
     </modules>
 
-    <modules>
-        <module>gateway</module>
-        <module>server</module>
-        <module>shareit-dto</module>
-    </modules>
-
     <build>
         <pluginManagement>
             <plugins>
