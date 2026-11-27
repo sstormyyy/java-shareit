@@ -19,10 +19,11 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
             Integer bookerId, LocalDateTime now);
 
     @Query("SELECT b FROM Booking b WHERE b.bookerId = :bookerId "
-            + "AND b.start > :now ORDER BY b.start DESC")
+            + "AND b.start > :now AND b.status = :status ORDER BY b.start DESC")
     List<Booking> findFutureByBookerId(
             @Param("bookerId") Integer bookerId,
-            @Param("now") LocalDateTime now);
+            @Param("now") LocalDateTime now,
+            @Param("status") Booking.BookingStatus status);
 
     List<Booking> findByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(
             Integer bookerId, LocalDateTime start, LocalDateTime end);
@@ -40,10 +41,11 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
             List<Integer> itemIds, LocalDateTime now);
 
     @Query("SELECT b FROM Booking b WHERE b.itemId IN :itemIds "
-            + "AND b.start > :now ORDER BY b.start DESC")
+            + "AND b.start > :now AND b.status = :status ORDER BY b.start DESC")
     List<Booking> findFutureByItemIds(
             @Param("itemIds") List<Integer> itemIds,
-            @Param("now") LocalDateTime now);
+            @Param("now") LocalDateTime now,
+            @Param("status") Booking.BookingStatus status);
 
     List<Booking> findByItemIdInAndStartBeforeAndEndAfterOrderByStartDesc(
             List<Integer> itemIds, LocalDateTime start, LocalDateTime end);
