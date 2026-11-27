@@ -1,4 +1,3 @@
-
 package ru.practicum.shareit.item.dto;
 
 import jakarta.validation.constraints.NotBlank;
@@ -12,8 +11,6 @@ public class ItemDto {
 
     private Integer id;
 
-    private Integer ownerId;
-
     @NotBlank
     private String name;
 
@@ -22,6 +19,8 @@ public class ItemDto {
 
     @NotNull
     private Boolean available;
+
+    private Integer ownerId;
 
     private Integer requestId;
 

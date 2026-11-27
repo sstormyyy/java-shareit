@@ -1,4 +1,3 @@
-
 package ru.practicum.shareit.request.service;
 
 import lombok.RequiredArgsConstructor;
@@ -47,8 +46,10 @@ public class RequestService {
     }
 
     public List<ItemRequestDto> getAllOthers(Integer requestorId) {
-        return requestRepository.findByRequestorIdNotOrderByCreatedDesc(requestorId)
-                .stream()
+        List<ItemRequest> requests =
+                requestRepository.findByRequestorIdNotOrderByCreatedDesc(requestorId);
+
+        return requests.stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
@@ -101,10 +102,10 @@ public class RequestService {
     private ItemDto mapItemToDto(Item item) {
         ItemDto dto = new ItemDto();
         dto.setId(item.getId());
-        dto.setOwnerId(item.getOwnerId());
         dto.setName(item.getName());
         dto.setDescription(item.getDescription());
         dto.setAvailable(item.getAvailable());
+        dto.setOwnerId(item.getOwnerId());
         dto.setRequestId(item.getRequestId());
 
         return dto;
