@@ -121,7 +121,7 @@ public class BookingService {
                 break;
             case PAST:
                 bookings = bookingRepository
-                        .findByBookerIdAndEndBeforeOrderByStartDesc(bookerId, now);
+                        .findPastByBookerId(bookerId, now);
                 break;
             case FUTURE:
                 bookings = bookingRepository
@@ -174,7 +174,7 @@ public class BookingService {
                 break;
             case PAST:
                 bookings = bookingRepository
-                        .findByItemIdInAndEndBeforeOrderByStartDesc(itemIds, now);
+                        .findPastByItemIds(itemIds, now);
                 break;
             case FUTURE:
                 bookings = bookingRepository
