@@ -42,15 +42,17 @@ class ErrorHandlerTest {
         assertStatus(IllegalArgumentException.class, HttpStatus.BAD_REQUEST);
     }
 
-    private void assertStatus(Class<? extends RuntimeException> exceptionClass,
-                              HttpStatus expectedStatus) throws NoSuchMethodException {
+    private void assertStatus(Class<? extends RuntimeException> exceptionClass, HttpStatus expectedStatus) {
+    try {
         ResponseStatus responseStatus = ErrorHandler.class
                 .getMethod(getHandlerMethodName(exceptionClass), exceptionClass)
                 .getAnnotation(ResponseStatus.class);
-
         assertThat(responseStatus).isNotNull();
         assertThat(responseStatus.value()).isEqualTo(expectedStatus);
+    } catch (NoSuchMethodException e) {
+        throw new AssertionError(e);
     }
+}
 
     private String getHandlerMethodName(Class<? extends RuntimeException> exceptionClass) {
         if (exceptionClass == EmailAlreadyExistsException.class) {
