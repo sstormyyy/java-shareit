@@ -125,7 +125,7 @@ public class BookingService {
                 break;
             case FUTURE:
                 bookings = bookingRepository
-                        .findByBookerIdAndStartAfterOrderByStartDesc(bookerId, now);
+                        .findFutureByBookerId(bookerId, now);
                 break;
             case WAITING:
                 bookings = bookingRepository
@@ -178,7 +178,7 @@ public class BookingService {
                 break;
             case FUTURE:
                 bookings = bookingRepository
-                        .findByItemIdInAndStartAfterOrderByStartDesc(itemIds, now);
+                        .findFutureByItemIds(itemIds, now);
                 break;
             case WAITING:
                 bookings = bookingRepository

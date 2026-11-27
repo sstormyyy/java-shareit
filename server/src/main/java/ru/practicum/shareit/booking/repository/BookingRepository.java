@@ -1,10 +1,11 @@
-
 package ru.practicum.shareit.booking.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import ru.practicum.shareit.booking.model.Booking;
 
 public interface BookingRepository extends JpaRepository<Booking, Integer> {
@@ -17,8 +18,11 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
     List<Booking> findByBookerIdAndStartBeforeOrderByStartDesc(
             Integer bookerId, LocalDateTime now);
 
-    List<Booking> findByBookerIdAndStartAfterOrderByStartDesc(
-            Integer bookerId, LocalDateTime now);
+    @Query("SELECT b FROM Booking b WHERE b.bookerId = :bookerId "
+            + "AND b.start > :now ORDER BY b.start DESC")
+    List<Booking> findFutureByBookerId(
+            @Param("bookerId") Integer bookerId,
+            @Param("now") LocalDateTime now);
 
     List<Booking> findByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(
             Integer bookerId, LocalDateTime start, LocalDateTime end);
@@ -32,8 +36,11 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
     List<Booking> findByItemIdInAndStartBeforeOrderByStartDesc(
             List<Integer> itemIds, LocalDateTime now);
 
-    List<Booking> findByItemIdInAndStartAfterOrderByStartDesc(
-            List<Integer> itemIds, LocalDateTime now);
+    @Query("SELECT b FROM Booking b WHERE b.itemId IN :itemIds "
+            + "AND b.start > :now ORDER BY b.start DESC")
+    List<Booking> findFutureByItemIds(
+            @Param("itemIds") List<Integer> itemIds,
+            @Param("now") LocalDateTime now);
 
     List<Booking> findByItemIdInAndStartBeforeAndEndAfterOrderByStartDesc(
             List<Integer> itemIds, LocalDateTime start, LocalDateTime end);
