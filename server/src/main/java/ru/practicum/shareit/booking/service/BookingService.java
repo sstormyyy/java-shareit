@@ -1,3 +1,4 @@
+
 package ru.practicum.shareit.booking.service;
 
 import java.time.LocalDateTime;
@@ -27,6 +28,10 @@ public class BookingService {
     private final UserRepository userRepository;
 
     public BookingDto create(Integer bookerId, BookingDto dto) {
+        if (!userRepository.existsById(bookerId)) {
+            throw new NotFoundException("User not found");
+        }
+
         Item item = itemRepository.findById(dto.getItemId())
                 .orElseThrow(() -> new NotFoundException("Item not found"));
 
@@ -62,7 +67,8 @@ public class BookingService {
                 .orElseThrow(() -> new NotFoundException("Item not found"));
 
         if (!item.getOwnerId().equals(ownerId)) {
-            throw new NotFoundException("Booking does not belong to this owner");
+            throw new IllegalArgumentException(
+                    "Booking does not belong to this owner");
         }
 
         if (booking.getStatus() != Booking.BookingStatus.WAITING) {
@@ -96,6 +102,10 @@ public class BookingService {
     }
 
     public List<BookingDto> getByBooker(Integer bookerId, BookingState state) {
+        if (!userRepository.existsById(bookerId)) {
+            throw new NotFoundException("User not found");
+        }
+
         LocalDateTime now = LocalDateTime.now();
         List<Booking> bookings;
 
@@ -137,6 +147,10 @@ public class BookingService {
     }
 
     public List<BookingDto> getByOwner(Integer ownerId, BookingState state) {
+        if (!userRepository.existsById(ownerId)) {
+            throw new NotFoundException("User not found");
+        }
+
         List<Integer> itemIds = itemRepository.findByOwnerId(ownerId).stream()
                 .map(Item::getId)
                 .collect(Collectors.toList());

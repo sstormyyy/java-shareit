@@ -1,3 +1,4 @@
+
 package ru.practicum.shareit.booking.repository;
 
 import java.time.LocalDateTime;
@@ -42,4 +43,23 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
 
     List<Booking> findByItemIdInAndStatusOrderByStartDesc(
             List<Integer> itemIds, Booking.BookingStatus status);
+
+    boolean existsByItemIdAndBookerIdAndStatusAndEndBefore(
+            Integer itemId,
+            Integer bookerId,
+            Booking.BookingStatus status,
+            LocalDateTime now
+    );
+
+    List<Booking> findFirstByItemIdAndStatusAndEndBeforeOrderByEndDesc(
+            Integer itemId,
+            Booking.BookingStatus status,
+            LocalDateTime now
+    );
+
+    List<Booking> findFirstByItemIdAndStatusAndStartAfterOrderByStartAsc(
+            Integer itemId,
+            Booking.BookingStatus status,
+            LocalDateTime now
+    );
 }
