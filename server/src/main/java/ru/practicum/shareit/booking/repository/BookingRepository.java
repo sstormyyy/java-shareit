@@ -10,21 +10,36 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
 
     List<Booking> findByBookerIdOrderByStartDesc(Integer bookerId);
 
-    List<Booking> findByItemIdInAndBookerIdNotOrderByStartDesc(List<Integer> itemIds, Integer bookerId);
+    List<Booking> findByItemIdInAndBookerIdNotOrderByStartDesc(
+            List<Integer> itemIds, Integer bookerId);
 
-    List<Booking> findByBookerIdAndStartBeforeOrderByStartDesc(Integer bookerId, LocalDateTime now);
+    List<Booking> findByBookerIdAndStartBeforeOrderByStartDesc(
+            Integer bookerId, LocalDateTime now);
 
-    List<Booking> findByBookerIdAndStartAfterOrderByStartDesc(Integer bookerId, LocalDateTime now);
+    List<Booking> findByBookerIdAndStartAfterOrderByStartDesc(
+            Integer bookerId, LocalDateTime now);
 
-    List<Booking> findByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(Integer bookerId, LocalDateTime now, LocalDateTime now2);
+    List<Booking> findByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(
+            Integer bookerId, LocalDateTime start, LocalDateTime end);
 
-    List<Booking> findByBookerIdAndStatusOrderByStartDesc(Integer bookerId, Booking.BookingStatus status);
+    List<Booking> findByBookerIdAndEndBeforeOrderByStartDesc(
+            Integer bookerId, LocalDateTime now);
 
-    List<Booking> findByItemIdInAndStartBeforeOrderByStartDesc(List<Integer> itemIds, LocalDateTime now);
+    List<Booking> findByBookerIdAndStatusOrderByStartDesc(
+            Integer bookerId, Booking.BookingStatus status);
 
-    List<Booking> findByItemIdInAndStartAfterOrderByStartDesc(List<Integer> itemIds, LocalDateTime now);
+    List<Booking> findByItemIdInAndStartBeforeOrderByStartDesc(
+            List<Integer> itemIds, LocalDateTime now);
 
-    List<Booking> findByItemIdInAndStartBeforeAndEndAfterOrderByStartDesc(List<Integer> itemIds, LocalDateTime now, LocalDateTime now2);
+    List<Booking> findByItemIdInAndStartAfterOrderByStartDesc(
+            List<Integer> itemIds, LocalDateTime now);
 
-    List<Booking> findByItemIdInAndStatusOrderByStartDesc(List<Integer> itemIds, Booking.BookingStatus status);
+    List<Booking> findByItemIdInAndStartBeforeAndEndAfterOrderByStartDesc(
+            List<Integer> itemIds, LocalDateTime start, LocalDateTime end);
+
+    List<Booking> findByItemIdInAndEndBeforeOrderByStartDesc(
+            List<Integer> itemIds, LocalDateTime now);
+
+    List<Booking> findByItemIdInAndStatusOrderByStartDesc(
+            List<Integer> itemIds, Booking.BookingStatus status);
 }
