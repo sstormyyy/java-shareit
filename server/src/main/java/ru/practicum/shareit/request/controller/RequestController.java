@@ -13,7 +13,9 @@ public class RequestController {
     private final RequestService requestService;
 
     @PostMapping
-    public ItemRequestDto create(@RequestHeader("X-Sharer-User-Id") Integer requestorId, @RequestBody ItemRequestDto dto) {
+    public ItemRequestDto create(
+            @RequestHeader("X-Sharer-User-Id") Integer requestorId,
+            @RequestBody ItemRequestDto dto) {
         return requestService.create(requestorId, dto);
     }
 
@@ -23,7 +25,7 @@ public class RequestController {
     }
 
     @GetMapping("/all")
-    public List<ItemRequestDto> getAllOthers(@RequestHeader("X-Sharer-User-Id") Integer requestorId) {
+    public List<ItemRequestWithItemsDto> getAllOthers(@RequestHeader("X-Sharer-User-Id") Integer requestorId) {
         return requestService.getAllOthers(requestorId);
     }
 

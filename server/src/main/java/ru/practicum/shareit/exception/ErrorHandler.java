@@ -1,4 +1,3 @@
-
 package ru.practicum.shareit.exception;
 
 import java.util.Map;
@@ -17,13 +16,13 @@ public class ErrorHandler {
         return Map.of("error", e.getMessage());
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleNotFoundException(final RuntimeException e) {
+    public Map<String, String> handleNotFoundException(final NotFoundException e) {
         return Map.of("error", e.getMessage());
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleIllegalArgumentException(final IllegalArgumentException e) {
         return Map.of("error", e.getMessage());

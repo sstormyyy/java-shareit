@@ -40,11 +40,11 @@ public class RequestService {
         return mapToDtoWithItems(requests);
     }
 
-    public List<ItemRequestDto> getAllOthers(Integer requestorId) {
-        return requestRepository.findByRequestorIdNotOrderByCreatedDesc(requestorId)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+    public List<ItemRequestWithItemsDto> getAllOthers(Integer requestorId) {
+        List<ItemRequest> requests =
+                requestRepository.findByRequestorIdNotOrderByCreatedDesc(requestorId);
+
+        return mapToDtoWithItems(requests);
     }
 
     public ItemRequestWithItemsDto getById(Integer requestId) {
