@@ -43,7 +43,7 @@ class ErrorHandlerTest {
     }
 
     private void assertStatus(Class<? extends RuntimeException> exceptionClass,
-                              HttpStatus expectedStatus) {
+                              HttpStatus expectedStatus) throws NoSuchMethodException {
         ResponseStatus responseStatus = ErrorHandler.class
                 .getMethod(getHandlerMethodName(exceptionClass), exceptionClass)
                 .getAnnotation(ResponseStatus.class);
