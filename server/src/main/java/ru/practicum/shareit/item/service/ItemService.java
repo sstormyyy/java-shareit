@@ -106,6 +106,7 @@ public class ItemService {
         ItemDto dto = new ItemDto();
 
         dto.setId(item.getId());
+        dto.setOwnerId(item.getOwnerId());
         dto.setName(item.getName());
         dto.setDescription(item.getDescription());
         dto.setAvailable(item.getAvailable());

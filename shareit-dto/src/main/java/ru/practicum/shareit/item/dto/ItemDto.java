@@ -12,6 +12,8 @@ public class ItemDto {
 
     private Integer id;
 
+    private Integer ownerId;
+
     @NotBlank
     private String name;
 

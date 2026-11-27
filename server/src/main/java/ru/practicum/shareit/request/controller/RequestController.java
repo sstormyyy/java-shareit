@@ -25,7 +25,7 @@ public class RequestController {
     }
 
     @GetMapping("/all")
-    public List<ItemRequestWithItemsDto> getAllOthers(@RequestHeader("X-Sharer-User-Id") Integer requestorId) {
+    public List<ItemRequestDto> getAllOthers(@RequestHeader("X-Sharer-User-Id") Integer requestorId) {
         return requestService.getAllOthers(requestorId);
     }
 

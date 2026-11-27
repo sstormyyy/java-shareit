@@ -11,6 +11,7 @@ import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.dto.ItemRequestWithItemsDto;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.request.repository.ItemRequestRepository;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,8 +24,13 @@ public class RequestService {
 
     private final ItemRequestRepository requestRepository;
     private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
 
     public ItemRequestDto create(Integer requestorId, ItemRequestDto dto) {
+        if (!userRepository.existsById(requestorId)) {
+            throw new NotFoundException("User not found");
+        }
+
         ItemRequest request = new ItemRequest();
         request.setDescription(dto.getDescription());
         request.setRequestorId(requestorId);
@@ -40,11 +46,11 @@ public class RequestService {
         return mapToDtoWithItems(requests);
     }
 
-    public List<ItemRequestWithItemsDto> getAllOthers(Integer requestorId) {
-        List<ItemRequest> requests =
-                requestRepository.findByRequestorIdNotOrderByCreatedDesc(requestorId);
-
-        return mapToDtoWithItems(requests);
+    public List<ItemRequestDto> getAllOthers(Integer requestorId) {
+        return requestRepository.findByRequestorIdNotOrderByCreatedDesc(requestorId)
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
 
     public ItemRequestWithItemsDto getById(Integer requestId) {
@@ -95,6 +101,7 @@ public class RequestService {
     private ItemDto mapItemToDto(Item item) {
         ItemDto dto = new ItemDto();
         dto.setId(item.getId());
+        dto.setOwnerId(item.getOwnerId());
         dto.setName(item.getName());
         dto.setDescription(item.getDescription());
         dto.setAvailable(item.getAvailable());

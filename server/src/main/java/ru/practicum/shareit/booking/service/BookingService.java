@@ -222,6 +222,7 @@ public class BookingService {
 
         ItemDto itemDto = new ItemDto();
         itemDto.setId(item.getId());
+        itemDto.setOwnerId(item.getOwnerId());
         itemDto.setName(item.getName());
         itemDto.setDescription(item.getDescription());
         itemDto.setAvailable(item.getAvailable());
